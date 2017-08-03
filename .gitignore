@@ -60,5 +60,5 @@ typings/
 .env
 
 *.js
-*.js.mp
+*.js.map
 .idea/
