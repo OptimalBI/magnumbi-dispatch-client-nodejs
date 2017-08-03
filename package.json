@@ -1,0 +1,20 @@
+{
+  "name": "magnum-microservices-client",
+  "version": "1.0.0",
+  "description": "Client library for Magnum Microservices",
+  "dependencies": {
+    "request": "^2.81.0",
+    "request-promise-native": "^1.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^6.0.1",
+    "@types/request": "^2.0.0",
+    "@types/request-promise-native": "^1.0.6",
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "OptimalBI Ltd",
+  "repository": "http://www.optimalbi.com",
+  "license": "Apache-2.0"
+}
