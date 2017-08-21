@@ -62,3 +62,4 @@ typings/
 *.js
 *.js.map
 .idea/
+*Log

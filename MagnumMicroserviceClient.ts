@@ -45,7 +45,8 @@ export class MagnumMicroserviceClient {
                 'pass': this._secretKey
             },
             method: 'GET',
-            json: true
+            json: true,
+            timeout: 8000
         };
         return new Promise<boolean>(function (resolve, reject) {
             rp(options).then(function (data) {
@@ -89,7 +90,8 @@ export class MagnumMicroserviceClient {
                 'content-type': 'application/json'
             },
             method: 'POST',
-            json: true
+            json: true,
+            timeout: 8000
         };
         return new Promise<void>((resolve, reject) => {
             rp(options).then(value => {
@@ -129,7 +131,8 @@ export class MagnumMicroserviceClient {
                 'content-type': 'application/json'
             },
             method: 'POST',
-            json: true
+            json: true,
+            timeout: 8000
         };
         return new Promise<void>((resolve, reject) => {
             rp(options).then(value => {
@@ -158,7 +161,10 @@ export class MagnumMicroserviceClient {
         if (longPollingSeconds > 20) {
             return Promise.reject("Invalid long polling seconds, must be < 20")
         }
-
+        let timeoutModifier = longPollingSeconds;
+        if (timeoutModifier < 0) {
+            timeoutModifier = 0;
+        }
         let options = {
             uri: `${this._hostname}:${this._port}/job/request/`,
             rejectUnauthorized: this._sslOptions.verifySsl,
@@ -175,7 +181,8 @@ export class MagnumMicroserviceClient {
                 'content-type': 'application/json'
             },
             method: 'POST',
-            json: true
+            json: true,
+            timeout: 8000 + (timeoutModifier * 1000)
         };
 
         return new Promise<MagnumMicroserviceJob>(function (resolve, reject) {
