@@ -1,9 +1,9 @@
-import {MagnumMicroserviceClient, MagnumMicroserviceJob, SslOptions} from "./MagnumMicroserviceClient";
+import {DispatchClient, MagnumMicroserviceJob, SslOptions} from "./DispatchClient";
 
 let sslOptions = new SslOptions();
 sslOptions.verifySsl = false;
 
-let mmmClient = new MagnumMicroserviceClient("https://10.0.1.46", 6883, "access", "11441144", sslOptions);
+let mmmClient = new DispatchClient("https://10.0.1.46", 6883, "access", "11441144", sslOptions);
 
 mmmClient.SubmitJob("TEST", {TEST: "Data", Nested: {"1": 2}}).then(value => {
     console.log("Added a job to test!");
@@ -13,7 +13,7 @@ mmmClient.SubmitJob("TEST", {TEST: "Data", Nested: {"1": 2}}).then(value => {
 });
 
 
-function emptyJobQueue(mmmClient: MagnumMicroserviceClient, appId: string): Promise<void> {
+function emptyJobQueue(mmmClient: DispatchClient, appId: string): Promise<void> {
     return mmmClient.GetJob(appId).then(value => {
         if (value == null) {
             console.log("No job found");

@@ -1,6 +1,6 @@
 import * as rp from "request-promise-native";
 
-export class MagnumMicroserviceClient {
+export class DispatchClient {
     private _hostname: string;
     private _port: number;
     private _sslOptions: SslOptions;
@@ -203,9 +203,9 @@ export class MagnumMicroserviceJob {
     public jobId: string;
     public appId: string;
     public data: any;
-    private mmmClient: MagnumMicroserviceClient;
+    private mmmClient: DispatchClient;
 
-    constructor(jobId: string, appId: string, data: any, mmmClient: MagnumMicroserviceClient) {
+    constructor(jobId: string, appId: string, data: any, mmmClient: DispatchClient) {
         this.jobId = jobId;
         this.appId = appId;
         this.data = data;
