@@ -6,12 +6,13 @@ export class DispatchClient {
     private _sslOptions: SslOptions;
     private _secretKey: string;
     private _accessKey: string;
+    private static readonly _jobTimeoutModifier : number = 12000;
 
     /**
-     * Creates a new MMM Client
+     * Creates a new Dispatch Client
      *
-     * @param {string} hostname The hostname of the MMM server (example: https://127.0.0.1)
-     * @param {number} port The port of the MMM server (default 6883)
+     * @param {string} hostname The hostname of the Dispatch server (example: https://127.0.0.1)
+     * @param {number} port The port of the Dispatch server (default 6883)
      * @param {string} accessKey The access key for authentication
      * @param {string} secretKey The secret key for authentication
      * @param {SslOptions} sslOptions Optional ssl options
@@ -46,7 +47,7 @@ export class DispatchClient {
             },
             method: 'GET',
             json: true,
-            timeout: 8000
+            timeout: DispatchClient._jobTimeoutModifier
         };
         return new Promise<boolean>(function (resolve, reject) {
             rp(options).then(function (data) {
@@ -56,14 +57,14 @@ export class DispatchClient {
                     return resolve(false)
                 }
             }).catch(function (error) {
-                console.error("Failed to verify MMM_Connection");
+                console.error("Failed to verify Dispatch connection.");
                 return reject(error);
             })
         });
 
     }
 
-    public CompleteSpecificJob(job: MagnumMicroserviceJob) {
+    public CompleteSpecificJob(job: DispatchJob) {
         return this.CompleteJob(job.appId, job.jobId)
     }
 
@@ -91,7 +92,7 @@ export class DispatchClient {
             },
             method: 'POST',
             json: true,
-            timeout: 8000
+            timeout: DispatchClient._jobTimeoutModifier
         };
         return new Promise<void>((resolve, reject) => {
             rp(options).then(value => {
@@ -132,7 +133,7 @@ export class DispatchClient {
             },
             method: 'POST',
             json: true,
-            timeout: 8000
+            timeout: DispatchClient._jobTimeoutModifier
         };
         return new Promise<void>((resolve, reject) => {
             rp(options).then(value => {
@@ -149,14 +150,14 @@ export class DispatchClient {
      * @param {string} appId The of the queue we want jobs from.
      * @param {number} jobTimeoutSeconds The number of seconds before assuming a job fails.
      * @param {number} longPollingSeconds The max number of seconds before returning with no job.
-     * @returns {Promise<MagnumMicroserviceJob>} The magnum microservice job or null.
+     * @returns {Promise<DispatchJob>} The magnum microservice job or null.
      * @constructor
      */
-    public GetJob(appId: string, jobTimeoutSeconds: number = 20, longPollingSeconds: number = -1): Promise<MagnumMicroserviceJob> {
-        let mmmClient = this; // Needed for inside the promise as it goes out of 'scope'
+    public RequestJob(appId: string, jobTimeoutSeconds: number = 20, longPollingSeconds: number = -1): Promise<DispatchJob> {
+        let dispatchClient = this; // Needed for inside the promise as it goes out of 'scope'
 
-        if (jobTimeoutSeconds < 10) {
-            jobTimeoutSeconds = 10;
+        if (jobTimeoutSeconds < 40) {
+            jobTimeoutSeconds = 40;
         }
         if (longPollingSeconds > 20) {
             return Promise.reject("Invalid long polling seconds, must be < 20")
@@ -182,15 +183,15 @@ export class DispatchClient {
             },
             method: 'POST',
             json: true,
-            timeout: 8000 + (timeoutModifier * 1000)
+            timeout: DispatchClient._jobTimeoutModifier + (timeoutModifier * 1000)
         };
 
-        return new Promise<MagnumMicroserviceJob>(function (resolve, reject) {
+        return new Promise<DispatchJob>(function (resolve, reject) {
             rp(options).then(value => {
                 if (!value.jobId) {
                     return resolve(null);
                 }
-                let job = new MagnumMicroserviceJob(value.jobId, appId, value.data, mmmClient);
+                let job = new DispatchJob(value.jobId, appId, value.data, dispatchClient);
                 resolve(job);
             }).catch(reason => {
                 return reject(reason)
@@ -199,21 +200,21 @@ export class DispatchClient {
     }
 }
 
-export class MagnumMicroserviceJob {
+export class DispatchJob {
     public jobId: string;
     public appId: string;
     public data: any;
-    private mmmClient: DispatchClient;
+    private dispatchClient: DispatchClient;
 
-    constructor(jobId: string, appId: string, data: any, mmmClient: DispatchClient) {
+    constructor(jobId: string, appId: string, data: any, dispatchClient: DispatchClient) {
         this.jobId = jobId;
         this.appId = appId;
         this.data = data;
-        this.mmmClient = mmmClient;
+        this.dispatchClient = dispatchClient;
     }
 
     public Complete(): Promise<void> {
-        return this.mmmClient.CompleteSpecificJob(this);
+        return this.dispatchClient.CompleteSpecificJob(this);
     }
 }
 

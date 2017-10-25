@@ -1,7 +1,7 @@
 {
-  "name": "magnum-microservices-client",
+  "name": "magnumbi-dispatch-client",
   "version": "1.0.0",
-  "description": "Client library for Magnum Microservices",
+  "description": "Client library for MagnumBI Dispatch",
   "dependencies": {
     "request": "^2.81.0",
     "request-promise-native": "^1.0.4"
