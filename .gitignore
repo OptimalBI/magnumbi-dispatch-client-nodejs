@@ -61,5 +61,7 @@ typings/
 
 *.js
 *.js.map
-.idea/
+.ideas
 *Log
+!/package-lock.json
+.idea/
