@@ -1,12 +1,15 @@
 import * as rp from "request-promise-native";
 
+/**
+ * The client for the MagnumBI Dispatch framework.
+ */
 export class DispatchClient {
     private _hostname: string;
     private _port: number;
     private _sslOptions: SslOptions;
     private _secretKey: string;
     private _accessKey: string;
-    private static readonly _jobTimeoutModifier : number = 12000;
+    private static readonly _jobTimeoutModifier: number = 12000;
 
     /**
      * Creates a new Dispatch Client
@@ -28,16 +31,15 @@ export class DispatchClient {
             // process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
             // TODO figure out how best to sort invalid SSL certs.
         }
-
     }
 
     /**
-     * Checks the status of the Magnum Microservice Server
-     *
+     * Checks the status of the MagnumBI Dispatch Server
+     * Returns True if connected to server successfully.
      * @returns {Promise<boolean>}
      * @constructor
      */
-    public StatusCheck(): Promise<boolean> {
+    public async StatusCheck(): Promise<boolean> {
         let options = {
             uri: `${this._hostname}:${this._port}/job/`,
             rejectUnauthorized: this._sslOptions.verifySsl,
@@ -49,28 +51,48 @@ export class DispatchClient {
             json: true,
             timeout: DispatchClient._jobTimeoutModifier
         };
-        return new Promise<boolean>(function (resolve, reject) {
-            rp(options).then(function (data) {
-                if (data.status == "OK") {
-                    return resolve(true)
-                } else {
-                    return resolve(false)
-                }
-            }).catch(function (error) {
-                console.error("Failed to verify Dispatch connection.");
-                return reject(error);
-            })
-        });
-
+        let data = await rp(options);
+        return data.status == "OK";
     }
 
-    public CompleteSpecificJob(job: DispatchJob) {
-        return this.CompleteJob(job.appId, job.jobId)
+    /**
+     * Removes all pending jobs from the specified queue.
+     *
+     * @param {string} queueId
+     * @returns {Promise<boolean>}
+     * @constructor
+     */
+    public async ClearQueue(queueId: string): Promise<void> {
+        let options = {
+            uri: `${this._hostname}:${this._port}/job/clear`,
+            rejectUnauthorized: this._sslOptions.verifySsl,
+            'auth': {
+                'user': this._accessKey,
+                'pass': this._secretKey
+            },
+            body: {
+                queueId: queueId
+            },
+            method: 'POST',
+            json: true,
+            timeout: DispatchClient._jobTimeoutModifier
+        };
+
+        try {
+            return await rp(options);
+        } catch (error) {
+            console.error("Failed to verify Dispatch connection.");
+            throw error
+        }
     }
 
-    public CompleteJob(appId: string, jobId: string): Promise<void> {
-        if (!appId || appId == '') {
-            return Promise.reject("Invalid appId")
+    public async CompleteSpecificJob(job: DispatchJob) {
+        return await this.CompleteJob(job.queueId, job.jobId)
+    }
+
+    public async CompleteJob(queueId: string, jobId: string): Promise<void> {
+        if (!queueId || queueId == '') {
+            return Promise.reject("Invalid queueId")
         }
         if (!jobId || jobId == '') {
             return Promise.reject("Invalid jobId")
@@ -84,7 +106,7 @@ export class DispatchClient {
                 'pass': this._secretKey
             },
             body: {
-                appId: appId,
+                queueId: queueId,
                 jobId: jobId
             },
             headers: {
@@ -94,27 +116,21 @@ export class DispatchClient {
             json: true,
             timeout: DispatchClient._jobTimeoutModifier
         };
-        return new Promise<void>((resolve, reject) => {
-            rp(options).then(value => {
-                resolve()
-            }).catch(reason => {
-                reject(reason)
-            })
-        });
+        return await rp(options);
     }
 
     /**
      * Submit a new job on the specified application queue.
      *
-     * @param {string} appId The appId.
+     * @param {string} queueId The queueId.
      * @param data The job's data.
      * @param previousJobs Any jobs that caused this job.
      * @returns {Promise<void>}
      * @constructor
      */
-    public SubmitJob(appId: string, data: any, previousJobs: string[] = null): Promise<void> {
-        if (!appId || appId == '') {
-            return Promise.reject("Invalid appId")
+    public async SubmitJob(queueId: string, data: any, previousJobs: string[] = null): Promise<void> {
+        if (!queueId || queueId == '') {
+            return Promise.reject("Invalid queueId")
         }
 
         let options = {
@@ -125,7 +141,7 @@ export class DispatchClient {
                 'pass': this._secretKey
             },
             body: {
-                appId: appId,
+                queueId: queueId,
                 data: data
             },
             headers: {
@@ -135,25 +151,19 @@ export class DispatchClient {
             json: true,
             timeout: DispatchClient._jobTimeoutModifier
         };
-        return new Promise<void>((resolve, reject) => {
-            rp(options).then(value => {
-                resolve()
-            }).catch(reason => {
-                reject(reason)
-            })
-        });
+        return await rp(options);
     }
 
     /**
      * Returns a job if there is one waiting, else null
      *
-     * @param {string} appId The of the queue we want jobs from.
+     * @param {string} queueId The of the queue we want jobs from.
      * @param {number} jobTimeoutSeconds The number of seconds before assuming a job fails.
      * @param {number} longPollingSeconds The max number of seconds before returning with no job.
      * @returns {Promise<DispatchJob>} The magnum microservice job or null.
      * @constructor
      */
-    public RequestJob(appId: string, jobTimeoutSeconds: number = 20, longPollingSeconds: number = -1): Promise<DispatchJob> {
+    public async RequestJob(queueId: string, jobTimeoutSeconds: number = 20, longPollingSeconds: number = -1): Promise<DispatchJob> {
         let dispatchClient = this; // Needed for inside the promise as it goes out of 'scope'
 
         if (jobTimeoutSeconds < 40) {
@@ -174,7 +184,7 @@ export class DispatchClient {
                 'pass': this._secretKey
             },
             body: {
-                appId: appId,
+                queueId: queueId,
                 "jobHandleTimeoutSeconds": jobTimeoutSeconds,
                 timeout: longPollingSeconds
             },
@@ -186,35 +196,33 @@ export class DispatchClient {
             timeout: DispatchClient._jobTimeoutModifier + (timeoutModifier * 1000)
         };
 
-        return new Promise<DispatchJob>(function (resolve, reject) {
-            rp(options).then(value => {
-                if (!value.jobId) {
-                    return resolve(null);
-                }
-                let job = new DispatchJob(value.jobId, appId, value.data, dispatchClient);
-                resolve(job);
-            }).catch(reason => {
-                return reject(reason)
-            })
-        });
+        try {
+            let data = await rp(options);
+            if(!data.jobId){
+                return null;
+            }
+            return new DispatchJob(data.jobId, queueId, data.data, dispatchClient);
+        } catch (error){
+            throw error;
+        }
     }
 }
 
 export class DispatchJob {
     public jobId: string;
-    public appId: string;
+    public queueId: string;
     public data: any;
     private dispatchClient: DispatchClient;
 
-    constructor(jobId: string, appId: string, data: any, dispatchClient: DispatchClient) {
+    constructor(jobId: string, queueId: string, data: any, dispatchClient: DispatchClient) {
         this.jobId = jobId;
-        this.appId = appId;
+        this.queueId = queueId;
         this.data = data;
         this.dispatchClient = dispatchClient;
     }
 
-    public Complete(): Promise<void> {
-        return this.dispatchClient.CompleteSpecificJob(this);
+    public async Complete(): Promise<void> {
+        return await this.dispatchClient.CompleteSpecificJob(this);
     }
 }
 

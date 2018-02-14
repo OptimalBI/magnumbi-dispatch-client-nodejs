@@ -3,7 +3,12 @@ import {DispatchClient, DispatchJob, SslOptions} from "./DispatchClient";
 let sslOptions = new SslOptions();
 sslOptions.verifySsl = false;
 
-let mmmClient = new DispatchClient("https://10.0.1.46", 6883, "access", "11441144", sslOptions);
+let mmmClient = new DispatchClient("https://127.0.0.1",
+    6883,
+    "test",
+    "token",
+    sslOptions
+);
 
 mmmClient.SubmitJob("TEST", {TEST: "Data", Nested: {"1": 2}}).then(value => {
     console.log("Added a job to test!");
@@ -31,13 +36,13 @@ function emptyJobQueue(mmmClient: DispatchClient, appId: string): Promise<void> 
 
 
 let a = {
-   j : {
-       "a":1,
-       "b":2
-   }
+    j: {
+        "a": 1,
+        "b": 2
+    }
 
 };
 let flat_j = {
-    "j_a":1,
-    "j_b":2
+    "j_a": 1,
+    "j_b": 2
 };

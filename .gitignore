@@ -65,3 +65,4 @@ typings/
 *Log
 !/package-lock.json
 .idea/
+!/DispatchUsageJavascript.js
