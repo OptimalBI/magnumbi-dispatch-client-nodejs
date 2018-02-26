@@ -1,4 +1,9 @@
-import * as rp from "request-promise-native";
+import * as rp_dispatch from "request-promise-native";
+import * as http from "http";
+import * as https from "https";
+import {Agent, IncomingMessage} from "http";
+import {Agent as Agents, RequestOptions} from "https";
+import {RequestPromiseOptions} from "request-promise-native";
 
 export class DispatchClient {
     private _hostname: string;
@@ -7,6 +12,7 @@ export class DispatchClient {
     private _secretKey: string;
     private _accessKey: string;
     private static readonly _jobTimeoutModifier : number = 12000;
+    private _agent : Agent | Agents;
 
     /**
      * Creates a new Dispatch Client
@@ -24,9 +30,10 @@ export class DispatchClient {
         this._accessKey = accessKey;
         this._secretKey = secretKey;
         this._sslOptions = sslOptions;
-        if (!sslOptions.verifySsl) {
-            // process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-            // TODO figure out how best to sort invalid SSL certs.
+        if(this._hostname.startsWith("https")){
+            this._agent = new Agents();
+        } else {
+            this._agent = new Agent();
         }
 
     }
@@ -45,12 +52,13 @@ export class DispatchClient {
                 'user': this._accessKey,
                 'pass': this._secretKey
             },
+            agent: this._agent,
             method: 'GET',
             json: true,
             timeout: DispatchClient._jobTimeoutModifier
         };
         return new Promise<boolean>(function (resolve, reject) {
-            rp(options).then(function (data) {
+            rp_dispatch(options).then(function (data) {
                 if (data.status == "OK") {
                     return resolve(true)
                 } else {
@@ -91,11 +99,12 @@ export class DispatchClient {
                 'content-type': 'application/json'
             },
             method: 'POST',
+            forever: false,
             json: true,
             timeout: DispatchClient._jobTimeoutModifier
         };
         return new Promise<void>((resolve, reject) => {
-            rp(options).then(value => {
+            rp_dispatch(options).then(value => {
                 resolve()
             }).catch(reason => {
                 reject(reason)
@@ -136,7 +145,7 @@ export class DispatchClient {
             timeout: DispatchClient._jobTimeoutModifier
         };
         return new Promise<void>((resolve, reject) => {
-            rp(options).then(value => {
+            rp_dispatch(options).then(value => {
                 resolve()
             }).catch(reason => {
                 reject(reason)
@@ -153,7 +162,7 @@ export class DispatchClient {
      * @returns {Promise<DispatchJob>} The magnum microservice job or null.
      * @constructor
      */
-    public RequestJob(appId: string, jobTimeoutSeconds: number = 20, longPollingSeconds: number = -1): Promise<DispatchJob> {
+    public async RequestJob(appId: string, jobTimeoutSeconds: number = 20, longPollingSeconds: number = -1): Promise<DispatchJob> {
         let dispatchClient = this; // Needed for inside the promise as it goes out of 'scope'
 
         if (jobTimeoutSeconds < 40) {
@@ -166,8 +175,8 @@ export class DispatchClient {
         if (timeoutModifier < 0) {
             timeoutModifier = 0;
         }
-        let options = {
-            uri: `${this._hostname}:${this._port}/job/request/`,
+        let options : RequestPromiseOptions = {
+            // uri: `${this._hostname}:${this._port}/job/request/`,
             rejectUnauthorized: this._sslOptions.verifySsl,
             auth: {
                 'user': this._accessKey,
@@ -185,18 +194,40 @@ export class DispatchClient {
             json: true,
             timeout: DispatchClient._jobTimeoutModifier + (timeoutModifier * 1000)
         };
+        // let jobResult = await rp_dispatch(options);
+        let jobResult = await rp_dispatch.post(`${this._hostname}:${this._port}/job/request/`,options);
 
-        return new Promise<DispatchJob>(function (resolve, reject) {
-            rp(options).then(value => {
-                if (!value.jobId) {
-                    return resolve(null);
-                }
-                let job = new DispatchJob(value.jobId, appId, value.data, dispatchClient);
-                resolve(job);
-            }).catch(reason => {
-                return reject(reason)
-            })
+        if (!jobResult.jobId) {
+            return null;
+        }
+        return new DispatchJob(jobResult.jobId, appId, jobResult.data, dispatchClient);
+    }
+
+    public async RequestJobNative(appId: string, jobTimeoutSeconds: number = 20, longPollingSeconds: number = -1): Promise<DispatchJob> {
+        let timeoutModifier = longPollingSeconds;
+        if (timeoutModifier < 0) {
+            timeoutModifier = 0;
+        }
+        let hostIp = this._hostname.split("/")[2];
+        let options : RequestOptions = {
+            hostname: `${hostIp}`,
+            port: this._port,
+            method: "POST",
+            path: "/job/request/",
+            rejectUnauthorized: this._sslOptions.verifySsl,
+            auth: `${this._accessKey}:${this._secretKey}`,
+            agent: false,
+            timeout: DispatchClient._jobTimeoutModifier + (timeoutModifier * 1000)
+        };
+
+        let result = await new Promise<IncomingMessage>((resolve, reject) =>{
+            https.request(options, res => {
+                console.log(res);
+                resolve(res);
+            });
         });
+        console.log(result);
+        return null;
     }
 }
 
