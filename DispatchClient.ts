@@ -4,11 +4,11 @@ import * as rp from "request-promise-native";
  * The client for the MagnumBI Dispatch framework.
  */
 export class DispatchClient {
-    private _hostname: string;
-    private _port: number;
+    private readonly _hostname: string;
+    private readonly _port: number;
     private _sslOptions: SslOptions;
-    private _secretKey: string;
-    private _accessKey: string;
+    private readonly _secretKey: string;
+    private readonly _accessKey: string;
     private static readonly _jobTimeoutModifier: number = 12000;
 
     /**
@@ -27,10 +27,6 @@ export class DispatchClient {
         this._accessKey = accessKey;
         this._secretKey = secretKey;
         this._sslOptions = sslOptions;
-        if (!sslOptions.verifySsl) {
-            // process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-            // TODO figure out how best to sort invalid SSL certs.
-        }
     }
 
     /**
@@ -51,8 +47,12 @@ export class DispatchClient {
             json: true,
             timeout: DispatchClient._jobTimeoutModifier
         };
-        let data = await rp(options);
-        return data.status == "OK";
+        try {
+            let data = await rp(options);
+            return data.status == "OK";
+        } catch (error) {
+            return Promise.reject(`Failed to check status ${error}`)
+        }
     }
 
     /**
@@ -116,7 +116,11 @@ export class DispatchClient {
             json: true,
             timeout: DispatchClient._jobTimeoutModifier
         };
-        return await rp(options);
+        try {
+            return await rp(options);
+        } catch (e) {
+            throw Error(`Failed to complete job ${e}`)
+        }
     }
 
     /**
@@ -151,7 +155,11 @@ export class DispatchClient {
             json: true,
             timeout: DispatchClient._jobTimeoutModifier
         };
-        return await rp(options);
+        try {
+            return await rp(options);
+        } catch (e) {
+            throw Error(`Failed to submit job ${e}`)
+        }
     }
 
     /**
@@ -198,12 +206,12 @@ export class DispatchClient {
 
         try {
             let data = await rp(options);
-            if(!data.jobId){
+            if (!data.jobId) {
                 return null;
             }
             return new DispatchJob(data.jobId, queueId, data.data, dispatchClient);
-        } catch (error){
-            throw error;
+        } catch (error) {
+            throw Error(`Failed to request job ${error}`);
         }
     }
 }
