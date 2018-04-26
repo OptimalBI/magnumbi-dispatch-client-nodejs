@@ -1,11 +1,12 @@
-const dispatch = require("./DispatchClient");
-const testQueueName = "EXAMPLE";
-async function run() {
-    let sslOptions = new dispatch.SslOptions();
-    sslOptions.verifySsl = false; // For development use only!
+import {DispatchClient, SslOptions} from "./dispatch-client";
 
-    // Create a new client.
-    let dispatchClient = new dispatch.DispatchClient(
+let sslOptions = new SslOptions();
+sslOptions.verifySsl = false;
+
+const testQueueName = "EXAMPLE";
+
+async function run(): Promise<void> {
+    let mmmClient = new DispatchClient(
         "https://127.0.0.1",
         6883,
         "test",
@@ -13,32 +14,26 @@ async function run() {
         sslOptions
     );
 
-    // Check the connection to the server.
-    let statusResponse = await dispatchClient.StatusCheck();
-    if (!statusResponse) {
-        throw new Error("Failed to connect to the magnumbi dispatch server");
-    }
-
     // Lets check the connection to the server.
-    let statusResult = await dispatchClient.StatusCheck();
+    let statusResult = await mmmClient.StatusCheck();
 
     // Clear the queue to get a nice clean start.
-    await dispatchClient.ClearQueue(testQueueName);
+    await mmmClient.ClearQueue(testQueueName);
 
     // Add a job to a queue.
-    await dispatchClient.SubmitJob(testQueueName, {message: "Hello "});
+    await mmmClient.SubmitJob(testQueueName, {message: "Hello "});
 
     // Add another job to the queue (note Dispatch does not guarantee order of jobs, just tries its best).
-    await dispatchClient.SubmitJob(testQueueName, {message: "world."});
+    await mmmClient.SubmitJob(testQueueName, {message: "world."});
 
     // Now lets grab a job off the queue.
-    let job1 = await dispatchClient.RequestJob(testQueueName, 20, -1);
+    let job1 = await mmmClient.RequestJob(testQueueName, 20, -1);
 
     // and use the jobs data for something
     let s = job1.data.message;
 
     // and grab a second job
-    let job2 = await dispatchClient.RequestJob(testQueueName, 20, -1);
+    let job2 = await mmmClient.RequestJob(testQueueName, 20, -1);
 
     // use data again
     s += job2.data.message;
@@ -56,4 +51,5 @@ run().then(() => {
 }).catch(reason => {
     console.log("Examples failed! " + reason)
 });
+
 

@@ -33,4 +33,4 @@ let mmmClient = new DispatchClient(
 let statusResult = await mmmClient.StatusCheck();
 ```
 
-For more example see the the file DispatchUsageTypescript.ts ot DispatchUsageJavascript.js.
+For more example see the the file dispatch-usage-typescript.ts ot dispatch-client-usage-javascript.js.

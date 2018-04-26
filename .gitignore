@@ -63,6 +63,7 @@ typings/
 *.js.map
 .ideas
 *Log
-!/package-lock.json
+!package-lock.json
 .idea/
-!/DispatchUsageJavascript.js
+!dispatch-client-usage-javascript.js
+!dist/*.js
