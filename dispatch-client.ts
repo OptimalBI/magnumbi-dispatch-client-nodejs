@@ -4,12 +4,12 @@ import * as rp from "request-promise-native";
  * The client for the MagnumBI Dispatch framework.
  */
 export class DispatchClient {
+    private static readonly _jobTimeoutModifier: number = 12000;
     private readonly _hostname: string;
     private readonly _port: number;
     private _sslOptions: SslOptions;
     private readonly _secretKey: string;
     private readonly _accessKey: string;
-    private static readonly _jobTimeoutModifier: number = 12000;
 
     /**
      * Creates a new Dispatch Client
@@ -27,6 +27,10 @@ export class DispatchClient {
         this._accessKey = accessKey;
         this._secretKey = secretKey;
         this._sslOptions = sslOptions;
+        if (!sslOptions) {
+            sslOptions = new SslOptions();
+            sslOptions.verifySsl = false;
+        }
     }
 
     /**

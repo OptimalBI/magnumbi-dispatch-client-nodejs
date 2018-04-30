@@ -2,12 +2,12 @@
  * The client for the MagnumBI Dispatch framework.
  */
 export declare class DispatchClient {
+    private static readonly _jobTimeoutModifier;
     private readonly _hostname;
     private readonly _port;
     private _sslOptions;
     private readonly _secretKey;
     private readonly _accessKey;
-    private static readonly _jobTimeoutModifier;
     /**
      * Creates a new Dispatch Client
      *

@@ -28,6 +28,10 @@ class DispatchClient {
         this._accessKey = accessKey;
         this._secretKey = secretKey;
         this._sslOptions = sslOptions;
+        if (!sslOptions) {
+            sslOptions = new SslOptions();
+            sslOptions.verifySsl = false;
+        }
     }
     /**
      * Checks the status of the MagnumBI Dispatch Server
