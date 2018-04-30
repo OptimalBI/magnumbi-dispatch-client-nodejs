@@ -6,9 +6,11 @@ To see more about MagnumBI Dispatch and download the server [click here](https:/
 
 ## Requirements
 
-Tested with nodejs v9.4.0
+Tested with NodeJS v8.10.0
 
 ## Getting started
+
+NPM coming soon!
 
 Clone this project to start.  
  See the example below for more details.
